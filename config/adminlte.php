@@ -257,7 +257,7 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'dashboard_url' => 'dashboard',
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
@@ -315,58 +315,58 @@ return [
 
     [
         'text' => 'Brands',
-        'url' => '#',
-        'icon' => 'fas fa-copyright',
+        'route' => 'brands.index',
+        'icon' => 'fas fa-copyright'
     ],
 
     [
         'text' => 'Units',
-        'url' => '#',
+        'route' => 'units.index',
         'icon' => 'fas fa-ruler',
     ],
 
     [
         'text' => 'Suppliers',
-        'url' => '#',
+        'route' => 'suppliers.index',
         'icon' => 'fas fa-truck',
     ],
 
     [
         'text' => 'Customers',
-        'url' => '#',
+        'route' => 'customers.index',
         'icon' => 'fas fa-users',
     ],
 
     [
-        'text' => 'Products',
-        'url' => '#',
-        'icon' => 'fas fa-box',
+         'text' => 'Products',
+         'route' => 'products.index',
+         'icon' => 'fas fa-box',
     ],
 
     ['header' => 'TRANSACTION'],
 
     [
         'text' => 'Purchases',
-        'url' => '#',
+        'route' => 'purchases.index',
         'icon' => 'fas fa-shopping-cart',
-    ],
+   ],
 
     [
         'text' => 'Sales',
-        'url' => '#',
+        'route' => 'sales.index',
         'icon' => 'fas fa-cash-register',
     ],
 
     [
-        'text' => 'Stock In',
+        'text' => 'Purchase Returns',
         'url' => '#',
-        'icon' => 'fas fa-arrow-down',
+        'icon' => 'fas fa-undo',
     ],
 
     [
-        'text' => 'Stock Out',
+        'text' => 'Sales Returns',
         'url' => '#',
-        'icon' => 'fas fa-arrow-up',
+        'icon' => 'fas fa-reply',
     ],
 
     ['header' => 'REPORTS'],
@@ -385,7 +385,7 @@ return [
 
     [
         'text' => 'Purchase Report',
-        'url' => '#',
+        'route' => 'reports.purchases',
         'icon' => 'fas fa-file-invoice',
     ],
 

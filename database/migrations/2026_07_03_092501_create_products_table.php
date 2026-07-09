@@ -20,6 +20,8 @@ return new class extends Migration
 
         $table->foreignId('unit_id')->constrained()->cascadeOnDelete();
 
+        $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
+
         $table->string('sku')->unique();
 
         $table->string('barcode')->nullable();
