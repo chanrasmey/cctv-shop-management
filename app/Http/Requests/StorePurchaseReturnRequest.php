@@ -16,20 +16,55 @@ class StorePurchaseReturnRequest extends FormRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * Validation Rules
      */
     public function rules(): array
     {
         return [
+
+            /*
+            |--------------------------------------------------------------------------
+            | Return Header
+            |--------------------------------------------------------------------------
+            */
+
             'return_date' => [
                 'required',
                 'date',
+            ],
+
+            'purchase_id' => [
+                'required',
+                'exists:purchases,id',
+            ],
+
+            'supplier_id' => [
+                'required',
+                'exists:suppliers,id',
             ],
 
             'remark' => [
                 'nullable',
                 'string',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Summary
+            |--------------------------------------------------------------------------
+            */
+
+            'subtotal' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Items
+            |--------------------------------------------------------------------------
+            */
 
             'purchase_detail_id' => [
                 'required',
@@ -48,9 +83,9 @@ class StorePurchaseReturnRequest extends FormRequest
             ],
 
             'qty.*' => [
-                'nullable',
+                'required',
                 'numeric',
-                'min:0',
+                'gt:0',
             ],
 
             'reason' => [
@@ -67,28 +102,44 @@ class StorePurchaseReturnRequest extends FormRequest
     }
 
     /**
-     * Additional business validation.
+     * Additional validation.
      */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            $this->validateArrayLengths($validator);
-            $this->validateAtLeastOneQuantity($validator);
-            $this->validateDuplicateDetails($validator);
+    public function withValidator(
+        Validator $validator
+    ): void {
+
+        $validator->after(function (
+            Validator $validator
+        ) {
+
+            $this->validateArrayLengths(
+                $validator
+            );
+
+            $this->validateDuplicateDetails(
+                $validator
+            );
+
         });
+
     }
 
-    private function validateArrayLengths(Validator $validator): void
-    {
+    /**
+     * Validate array lengths.
+     */
+    private function validateArrayLengths(
+        Validator $validator
+    ): void {
+
         $arrays = [
             'purchase_detail_id',
             'qty',
-            'reason',
         ];
 
         $expected = null;
 
         foreach ($arrays as $field) {
+
             if (! is_array($this->$field)) {
                 continue;
             }
@@ -101,43 +152,70 @@ class StorePurchaseReturnRequest extends FormRequest
             }
 
             if ($count !== $expected) {
+
                 $validator->errors()->add(
                     $field,
-                    'Purchase return item data is inconsistent.'
+                    'Purchase Return item data is inconsistent.'
                 );
+
             }
         }
     }
 
-    private function validateAtLeastOneQuantity(Validator $validator): void
-    {
-        if (! is_array($this->qty)) {
-            return;
-        }
+    /**
+     * Reject duplicate items.
+     */
+    private function validateDuplicateDetails(
+        Validator $validator
+    ): void {
 
-        foreach ($this->qty as $qty) {
-            if ((float) $qty > 0) {
-                return;
-            }
-        }
-
-        $validator->errors()->add(
-            'qty',
-            'Please enter at least one return quantity.'
-        );
-    }
-
-    private function validateDuplicateDetails(Validator $validator): void
-    {
         if (! is_array($this->purchase_detail_id)) {
             return;
         }
 
-        if (count($this->purchase_detail_id) !== count(array_unique($this->purchase_detail_id))) {
+        if (
+            count($this->purchase_detail_id)
+            !==
+            count(array_unique($this->purchase_detail_id))
+        ) {
+
             $validator->errors()->add(
                 'purchase_detail_id',
-                'Duplicate purchase items are not allowed in the same return.'
+                'Duplicate products are not allowed.'
             );
+
         }
+
+    }
+
+    /**
+     * Validation Messages.
+     */
+    public function messages(): array
+    {
+        return [
+
+            'return_date.required'
+                => 'Return date is required.',
+
+            'purchase_id.required'
+                => 'Purchase is required.',
+
+            'supplier_id.required'
+                => 'Supplier is required.',
+
+            'purchase_detail_id.required'
+                => 'Please select at least one item.',
+
+            'purchase_detail_id.min'
+                => 'Please select at least one item.',
+
+            'qty.*.gt'
+                => 'Return quantity must be greater than zero.',
+
+            'subtotal.required'
+                => 'Subtotal is required.',
+
+        ];
     }
 }

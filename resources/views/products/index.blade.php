@@ -208,17 +208,21 @@
 
             @empty
 
-               <tr class="{{ $product->stock <= $product->minimum_stock ? 'table-danger' : '' }}">
+<tr>
 
-                    <td colspan="11" class="text-center">
+    <td colspan="11" class="text-center text-muted py-4">
 
-                        No Products Found.
+        <i class="fas fa-box-open fa-2x mb-2"></i>
 
-                    </td>
+        <br>
 
-                </tr>
+        No products found.
 
-            @endforelse
+    </td>
+
+</tr>
+
+@endforelse
 
             </tbody>
 

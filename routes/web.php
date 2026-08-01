@@ -1,5 +1,7 @@
 <?php
 
+
+use App\Http\Controllers\SalesReturnController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
@@ -9,7 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseReportController;
 use App\Http\Controllers\PurchaseReturnController;
-use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +50,25 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])
         ->name('products.barcode');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Company Settings
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+    '/settings/company',
+    [App\Http\Controllers\CompanySettingController::class, 'edit']
+)
+->name('settings.company.edit');
+
+Route::put(
+    '/settings/company',
+    [App\Http\Controllers\CompanySettingController::class, 'update']
+)
+->name('settings.company.update');   
+
     /*
     |--------------------------------------------------------------------------
     | Inventory
@@ -68,8 +89,73 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('purchases', PurchaseController::class);
 
-    Route::resource('sales', SaleController::class)
-        ->only(['index', 'create', 'store', 'show']);
+    /*
+|--------------------------------------------------------------------------
+| Sales
+|--------------------------------------------------------------------------
+*/
+
+Route::resource('sales', SalesController::class);
+
+Route::get(
+    'sales/{sale}/print',
+    [SalesController::class, 'print']
+)->name('sales.print');
+
+Route::post(
+    'sales/{sale}/duplicate',
+    [SalesController::class, 'duplicate']
+)->name('sales.duplicate');
+/*
+|--------------------------------------------------------------------------
+| Sales Returns
+|--------------------------------------------------------------------------
+*/
+
+Route::resource(
+    'sales-returns',
+    SalesReturnController::class
+);
+
+Route::get(
+    'sales-returns/{salesReturn}/print',
+    [SalesReturnController::class, 'print']
+)->name('sales-returns.print');
+
+Route::patch(
+    'sales-returns/{salesReturn}/cancel',
+    [SalesReturnController::class, 'cancel']
+)->name('sales-returns.cancel');
+/*
+|--------------------------------------------------------------------------
+| Future Reports (Reserved)
+|--------------------------------------------------------------------------
+|
+| Keep these routes grouped together. They will be enabled when the
+| Reports module is completed.
+|
+*/
+
+Route::prefix('reports')
+    ->name('reports.')
+    ->group(function () {
+
+        // Sales
+        // Route::get('/sales', ...)->name('sales');
+
+        // Purchases
+        // Route::get('/purchases', ...)->name('purchases');
+
+        // Inventory
+        // Route::get('/inventory', ...)->name('inventory');
+
+        // Profit & Loss
+        // Route::get('/profit-loss', ...)->name('profit-loss');
+
+        // Stock Valuation
+        // Route::get('/stock-valuation', ...)->name('stock-valuation');
+
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -97,3 +183,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+require __DIR__.'/reports.php';

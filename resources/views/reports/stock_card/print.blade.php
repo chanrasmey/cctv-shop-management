@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Stock Card Report</title>
+
+    <style>
+
+        body{
+            font-family: DejaVu Sans, sans-serif;
+            font-size:12px;
+            color:#222;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th,
+        td{
+            border:1px solid #555;
+            padding:6px;
+        }
+
+        th{
+            background:#efefef;
+        }
+
+        .text-center{
+            text-align:center;
+        }
+
+        .text-right{
+            text-align:right;
+        }
+
+        .header{
+            margin-bottom:20px;
+        }
+
+        .company{
+            font-size:22px;
+            font-weight:bold;
+        }
+
+        .report-title{
+            font-size:18px;
+            font-weight:bold;
+            margin-top:8px;
+        }
+
+        .muted{
+            color:#666;
+        }
+
+        .summary{
+            margin:15px 0;
+        }
+
+        .summary td{
+            width:25%;
+            text-align:center;
+            font-weight:bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="company">
+
+        {{ $company->company_name ?? config('app.name') }}
+
+    </div>
+
+    <div>
+
+        {{ $company->address ?? '' }}
+
+    </div>
+
+    <div>
+
+        {{ $company->phone ?? '' }}
+
+        @if(!empty($company->email))
+            | {{ $company->email }}
+        @endif
+
+    </div>
+
+    <div class="report-title">
+
+        STOCK CARD REPORT
+
+    </div>
+
+    <div class="muted">
+
+        Generated :
+        {{ now()->format('Y-m-d H:i:s') }}
+
+    </div>
+
+</div>
+
+<table class="summary">
+
+    <tr>
+
+        <td>
+
+            Opening<br>
+
+            {{ number_format($summary['opening']) }}
+
+        </td>
+
+        <td>
+
+            Stock In<br>
+
+            {{ number_format($summary['stock_in']) }}
+
+        </td>
+
+        <td>
+
+            Stock Out<br>
+
+            {{ number_format($summary['stock_out']) }}
+
+        </td>
+
+        <td>
+
+            Closing<br>
+
+            {{ number_format($summary['closing']) }}
+
+        </td>
+
+    </tr>
+
+</table>
+
+<table>
+
+    <thead>
+
+    <tr>
+
+        <th width="12%">Date</th>
+        <th>Product</th>
+        <th width="12%">Reference</th>
+        <th width="8%">Type</th>
+        <th width="8%">In</th>
+        <th width="8%">Out</th>
+        <th width="10%">Balance</th>
+        <th>Remark</th>
+
+    </tr>
+
+    </thead>
+
+    <tbody>
+    @forelse($movements as $movement)
+
+    @php
+        $inQty = $movement->movement_type === 'IN'
+            ? $movement->quantity
+            : 0;
+
+        $outQty = $movement->movement_type === 'OUT'
+            ? $movement->quantity
+            : 0;
+    @endphp
+
+    <tr>
+
+        <td class="text-center">
+            {{ optional($movement->movement_date)->format('Y-m-d') }}
+        </td>
+
+        <td>
+            {{ $movement->product->product_name ?? '-' }}
+        </td>
+
+        <td class="text-center">
+            {{ $movement->reference_no ?? '-' }}
+        </td>
+
+        <td class="text-center">
+            {{ $movement->movement_type }}
+        </td>
+
+        <td class="text-right">
+            {{ $inQty ? number_format($inQty) : '-' }}
+        </td>
+
+        <td class="text-right">
+            {{ $outQty ? number_format($outQty) : '-' }}
+        </td>
+
+        <td class="text-right">
+            {{ number_format($movement->running_balance) }}
+        </td>
+
+        <td>
+            {{ $movement->remark ?? '-' }}
+        </td>
+
+    </tr>
+
+@empty
+
+    <tr>
+
+        <td colspan="8" class="text-center">
+
+            No stock movement records found.
+
+        </td>
+
+    </tr>
+
+@endforelse
+
+    </tbody>
+
+    <tfoot>
+
+    <tr>
+
+        <th colspan="4" class="text-right">
+
+            Totals
+
+        </th>
+
+        <th class="text-right">
+
+            {{ number_format($summary['stock_in']) }}
+
+        </th>
+
+        <th class="text-right">
+
+            {{ number_format($summary['stock_out']) }}
+
+        </th>
+
+        <th class="text-right">
+
+            {{ number_format($summary['closing']) }}
+
+        </th>
+
+        <th></th>
+
+    </tr>
+
+    </tfoot>
+
+</table>
+
+<br>
+
+<table style="border:none;">
+
+    <tr>
+
+        <td style="border:none;width:33%;text-align:center;">
+
+            _______________________<br>
+            Prepared By
+
+        </td>
+
+        <td style="border:none;width:33%;text-align:center;">
+
+            _______________________<br>
+            Checked By
+
+        </td>
+
+        <td style="border:none;width:33%;text-align:center;">
+
+            _______________________<br>
+            Approved By
+
+        </td>
+
+    </tr>
+
+</table>
+<div style="margin-top:20px;">
+
+    <table style="border:none;width:100%;">
+
+        <tr>
+
+            <td style="border:none;">
+
+                Generated by:
+                {{ auth()->user()->name ?? 'System' }}
+
+            </td>
+
+            <td style="border:none;text-align:right;">
+
+                Printed:
+                {{ now()->format('Y-m-d H:i:s') }}
+
+            </td>
+
+        </tr>
+
+    </table>
+
+</div>
+
+<script>
+
+window.onload = function () {
+
+    window.print();
+
+};
+
+</script>
+
+</body>
+</html>

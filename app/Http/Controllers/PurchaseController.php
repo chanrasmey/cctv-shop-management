@@ -6,7 +6,7 @@ use App\Http\Requests\StorePurchaseRequest;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
-use App\Services\Inventory\PurchaseService;
+use App\Services\Purchases\PurchaseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Throwable;

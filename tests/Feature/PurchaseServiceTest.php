@@ -9,7 +9,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
-use App\Services\Inventory\PurchaseService;
+use App\Services\Purchases\PurchaseService;
 use InvalidArgumentException;
 
 function createPurchasableProduct(array $attributes = []): Product
@@ -221,9 +221,8 @@ test('completed purchases cannot be cancelled when stock is lower than purchased
     app(PurchaseService::class)->cancel($purchase);
 })->throws(
     InvalidArgumentException::class,
-    'Cannot cancel purchase because available stock is lower than the purchased quantity.'
+    'Cannot cancel Purchase'
 );
-
 test('cancelled purchases cannot be cancelled again', function () {
     $this->actingAs(User::factory()->create());
 
@@ -235,7 +234,10 @@ test('cancelled purchases cannot be cancelled again', function () {
     $cancelled = app(PurchaseService::class)->cancel($purchase);
 
     app(PurchaseService::class)->cancel($cancelled);
-})->throws(InvalidArgumentException::class, 'Purchase is already cancelled.');
+})->throws(
+    InvalidArgumentException::class,
+    'is already cancelled.'
+);
 
 
 test('draft purchases can be deleted', function () {

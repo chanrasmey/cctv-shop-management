@@ -4,45 +4,32 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockMovement extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-
         'product_id',
-
         'movement_type',
-
         'reference_no',
-
         'reference_id',
-
         'qty_in',
-
         'qty_out',
-
         'balance',
-
         'unit_cost',
-
         'remark',
-
         'created_by',
-
     ];
 
     protected $casts = [
-
-        'qty_in' => 'decimal:2',
-
-        'qty_out' => 'decimal:2',
-
-        'balance' => 'decimal:2',
-
-        'unit_cost' => 'decimal:2',
-
+        'qty_in'     => 'decimal:2',
+        'qty_out'    => 'decimal:2',
+        'balance'    => 'decimal:2',
+        'unit_cost'  => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /*
@@ -51,74 +38,77 @@ class StockMovement extends Model
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Product
-     */
-    public function product()
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * User who created the movement
-     */
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Helper Methods
+    | Accessors
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Check if this movement is stock in.
-     */
-    public function isStockIn(): bool
-    {
-        return $this->qty_in > 0;
-    }
-
-    /**
-     * Check if this movement is stock out.
-     */
-    public function isStockOut(): bool
-    {
-        return $this->qty_out > 0;
-    }
-
-    /**
-     * Get movement quantity.
-     */
-    public function quantity(): float
+    public function getQuantityAttribute(): float
     {
         return $this->qty_in > 0
             ? (float) $this->qty_in
             : (float) $this->qty_out;
     }
 
-    /**
-     * Movement badge color (AdminLTE).
-     */
-    public function badgeColor(): string
+    public function getIsStockInAttribute(): bool
     {
-        return match ($this->movement_type) {
+        return (float) $this->qty_in > 0;
+    }
 
-            'Purchase'         => 'success',
+    public function getIsStockOutAttribute(): bool
+    {
+        return (float) $this->qty_out > 0;
+    }
 
-            'Sale'             => 'primary',
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
 
-            'Purchase Return'  => 'warning',
+    public function scopeLatestFirst($query)
+    {
+        return $query->orderByDesc('id');
+    }
 
-            'Sales Return'     => 'info',
+    public function scopePurchase($query)
+    {
+        return $query->where('movement_type', 'Purchase');
+    }
 
-            'Adjustment'       => 'danger',
+    public function scopeSale($query)
+    {
+        return $query->where('movement_type', 'Sale');
+    }
 
-            'Opening Stock'    => 'secondary',
+    public function scopePurchaseReturn($query)
+    {
+        return $query->where('movement_type', 'Purchase Return');
+    }
 
-            default            => 'dark',
-        };
+    public function scopeSalesReturn($query)
+    {
+        return $query->where('movement_type', 'Sales Return');
+    }
+
+    public function scopeAdjustment($query)
+    {
+        return $query->where('movement_type', 'Adjustment');
+    }
+
+    public function scopeOpeningStock($query)
+    {
+        return $query->where('movement_type', 'Opening Stock');
     }
 }

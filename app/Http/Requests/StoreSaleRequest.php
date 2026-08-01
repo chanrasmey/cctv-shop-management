@@ -3,24 +3,18 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 
 class StoreSaleRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized.
-     */
     public function authorize(): bool
     {
-        return auth()->check();
+        return true;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function rules(): array
     {
         return [
+
             'sale_date' => [
                 'required',
                 'date',
@@ -31,24 +25,8 @@ class StoreSaleRequest extends FormRequest
                 'exists:customers,id',
             ],
 
-            'invoice_no' => [
+            'paid_amount' => [
                 'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'status' => [
-                'required',
-                'in:Draft,Pending,Completed',
-            ],
-
-            'remark' => [
-                'nullable',
-                'string',
-            ],
-
-            'subtotal' => [
-                'required',
                 'numeric',
                 'min:0',
             ],
@@ -85,12 +63,6 @@ class StoreSaleRequest extends FormRequest
                 'min:0',
             ],
 
-            'paid_amount' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
             'balance' => [
                 'nullable',
                 'numeric',
@@ -103,131 +75,98 @@ class StoreSaleRequest extends FormRequest
                 'min:0',
             ],
 
-            'product_id' => [
+            'remark' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'items' => [
                 'required',
                 'array',
                 'min:1',
             ],
 
-            'product_id.*' => [
+            'items.*.product_id' => [
                 'required',
                 'exists:products,id',
             ],
 
-            'qty' => [
-                'required',
-                'array',
-            ],
-
-            'qty.*' => [
+            'items.*.qty' => [
                 'required',
                 'numeric',
                 'gt:0',
             ],
 
-            'unit_price' => [
-                'required',
-                'array',
-            ],
-
-            'unit_price.*' => [
+            'items.*.unit_price' => [
                 'required',
                 'numeric',
                 'min:0',
             ],
 
-            'discount_percent_item' => [
-                'nullable',
-                'array',
-            ],
-
-            'discount_percent_item.*' => [
+            'items.*.discount_percent' => [
                 'nullable',
                 'numeric',
                 'min:0',
                 'max:100',
             ],
 
-            'discount_amount_item' => [
-                'nullable',
-                'array',
-            ],
-
-            'discount_amount_item.*' => [
+            'items.*.discount_amount' => [
                 'nullable',
                 'numeric',
                 'min:0',
             ],
 
-            'subtotal_item' => [
-                'required',
-                'array',
-            ],
-
-            'subtotal_item.*' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
         ];
     }
 
-    /**
-     * Additional business validation.
-     */
-    public function withValidator(Validator $validator): void
+    public function messages(): array
     {
-        $validator->after(function (Validator $validator): void {
-            $this->validateArrayLengths($validator);
-            $this->validateDuplicateProducts($validator);
-        });
-    }
+        return [
 
-    private function validateArrayLengths(Validator $validator): void
-    {
-        $arrays = [
-            'product_id',
-            'qty',
-            'unit_price',
-            'discount_percent_item',
-            'discount_amount_item',
-            'subtotal_item',
+            'items.required' => 'Please add at least one product.',
+
+            'items.min' => 'Please add at least one product.',
+
+            'items.*.product_id.required' => 'Please select a product.',
+
+            'items.*.qty.required' => 'Quantity is required.',
+
+            'items.*.qty.gt' => 'Quantity must be greater than zero.',
+
+            'items.*.unit_price.required' => 'Unit price is required.',
+
+            'sale_date.required' => 'Sale date is required.',
+
         ];
-
-        $expected = null;
-
-        foreach ($arrays as $field) {
-            if (! is_array($this->$field)) {
-                continue;
-            }
-
-            $count = count($this->$field);
-
-            if ($expected === null) {
-                $expected = $count;
-                continue;
-            }
-
-            if ($count !== $expected) {
-                $validator->errors()->add(
-                    $field,
-                    'Sale item data is inconsistent.'
-                );
-            }
-        }
     }
 
-    private function validateDuplicateProducts(Validator $validator): void
+    public function attributes(): array
     {
-        if (! is_array($this->product_id)) {
-            return;
-        }
+        return [
 
-        if (count($this->product_id) !== count(array_unique($this->product_id))) {
-            $validator->errors()->add(
-                'product_id',
-                'Duplicate products are not allowed in the same sale.'
-            );
-        }
+            'sale_date' => 'sale date',
+
+            'customer_id' => 'customer',
+
+            'paid_amount' => 'paid amount',
+
+            'discount_percent' => 'discount',
+
+            'tax_percent' => 'tax',
+
+            'remark' => 'remark',
+
+            'items' => 'sale items',
+
+            'items.*.product_id' => 'product',
+
+            'items.*.qty' => 'quantity',
+
+            'items.*.unit_price' => 'unit price',
+
+            'items.*.discount_percent' => 'item discount',
+
+        ];
     }
 }

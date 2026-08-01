@@ -9,8 +9,8 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
-use App\Services\Inventory\PurchaseReturnService;
-use App\Services\Inventory\PurchaseService;
+use App\Services\Purchases\PurchaseReturnService;
+use App\Services\Purchases\PurchaseService;
 use InvalidArgumentException;
 
 function createReturnServiceProduct(array $attributes = []): Product
@@ -158,7 +158,14 @@ test('return quantity cannot exceed current stock', function () {
     );
     $detail = $purchase->details()->first();
 
-    $product->update(['stock' => 0]);
+   $product->refresh();
+
+$product->update([
+    'stock' => 0
+]);
+
+$product->refresh();
+
 
     app(PurchaseReturnService::class)->create(
         $purchase,

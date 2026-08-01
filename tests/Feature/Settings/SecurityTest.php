@@ -2,35 +2,14 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Livewire;
 
-beforeEach(function () {
-});
-
-test('security settings page can be rendered', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)
-        ->get(route('security.edit'));
-
-    $response->assertOk();
-});
-
-test('security settings page renders without two factor when feature is disabled', function () {
-    config(['fortify.features' => []]);
-
+test('profile page contains password update form', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('security.edit'))
+        ->get(route('profile.edit'))
         ->assertOk()
-        ->assertSee('Update password')
-        ->assertDontSee('Manage your passkeys for passwordless sign-in')
-        ->assertDontSee('Add a passkey to sign in without a password')
-        ->assertDontSee('Two-factor authentication');
-});
-
-test('two factor authentication disabled when confirmation abandoned between requests', function () {
+        ->assertSee('Update Password');
 });
 
 test('password can be updated', function () {
@@ -38,17 +17,21 @@ test('password can be updated', function () {
         'password' => Hash::make('password'),
     ]);
 
-    $this->actingAs($user);
+    $response = $this
+        ->actingAs($user)
+        ->put(route('password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
 
-    $response = Livewire::test('pages::settings.security')
-        ->set('current_password', 'password')
-        ->set('password', 'new-password')
-        ->set('password_confirmation', 'new-password')
-        ->call('updatePassword');
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
 
-    $response->assertHasNoErrors();
-
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    expect(
+        Hash::check('new-password', $user->refresh()->password)
+    )->toBeTrue();
 });
 
 test('correct password must be provided to update password', function () {
@@ -56,13 +39,20 @@ test('correct password must be provided to update password', function () {
         'password' => Hash::make('password'),
     ]);
 
-    $this->actingAs($user);
+    $response = $this
+        ->actingAs($user)
+        ->from(route('profile.edit'))
+        ->put(route('password.update'), [
+            'current_password' => 'wrong-password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
 
-    $response = Livewire::test('pages::settings.security')
-        ->set('current_password', 'wrong-password')
-        ->set('password', 'new-password')
-        ->set('password_confirmation', 'new-password')
-        ->call('updatePassword');
+   $response->assertSessionHasErrorsIn('updatePassword', [
+    'current_password',
+]);
 
-    $response->assertHasErrors(['current_password']);
+    expect(
+        Hash::check('password', $user->fresh()->password)
+    )->toBeTrue();
 });

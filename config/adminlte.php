@@ -371,43 +371,58 @@ return [
 
     ['header' => 'REPORTS'],
 
-    [
-        'text' => 'Inventory Report',
-        'url' => '#',
-        'icon' => 'fas fa-chart-bar',
-    ],
+[
+    'text' => 'Inventory Report',
+    'route' => 'reports.inventory',
+    'icon' => 'fas fa-chart-bar',
+],
 
-    [
-        'text' => 'Sales Report',
-        'url' => '#',
-        'icon' => 'fas fa-chart-line',
-    ],
+[
+    'text' => 'Sales Report',
+    'route' => 'reports.sales',
+    'icon' => 'fas fa-chart-line',
+],
 
-    [
-        'text' => 'Purchase Report',
-        'route' => 'reports.purchases',
-        'icon' => 'fas fa-file-invoice',
-    ],
+[
+    'text' => 'Purchase Report',
+    'route' => 'reports.purchases',
+    'icon' => 'fas fa-file-invoice',
+],
+
+[
+    'text' => 'Stock Report',
+    'route' => 'reports.stock',
+    'icon' => 'fas fa-boxes',
+],
 
     ['header' => 'SYSTEM'],
 
-    [
-        'text' => 'Users',
-        'url' => '#',
-        'icon' => 'fas fa-user',
-    ],
+[
+    'text' => 'Administration',
+    'icon' => 'fas fa-tools',
 
-    [
-        'text' => 'Roles',
-        'url' => '#',
-        'icon' => 'fas fa-user-shield',
-    ],
+    'submenu' => [
 
-    [
-        'text' => 'Company Settings',
-        'url' => '#',
-        'icon' => 'fas fa-cogs',
+        [
+            'text' => 'Users',
+            'url' => '#',
+            'icon' => 'fas fa-user',
+        ],
+
+        [
+            'text' => 'Roles',
+            'url' => '#',
+            'icon' => 'fas fa-user-shield',
+        ],
+
+        [
+            'text' => 'Company Settings',
+            'route' => 'settings.company.edit',
+            'icon' => 'fas fa-building',
+        ],
+
     ],
+],
 
 ],
     /*

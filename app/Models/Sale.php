@@ -13,39 +13,72 @@ class Sale extends Model
 
     protected $fillable = [
         'sale_no',
-        'sale_date',
-        'customer_id',
         'invoice_no',
+        'sale_date',
+
+        'customer_id',
+
         'subtotal',
+
         'discount_percent',
         'discount_amount',
+
         'tax_percent',
         'tax_amount',
+
         'grand_total',
+
         'paid_amount',
         'balance',
         'change_amount',
+
         'status',
+
         'remark',
+
         'created_by',
     ];
 
     protected $casts = [
+
         'sale_date' => 'date',
+
         'subtotal' => 'decimal:2',
+
         'discount_percent' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+
         'tax_percent' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+
         'grand_total' => 'decimal:2',
+
         'paid_amount' => 'decimal:2',
+
         'balance' => 'decimal:2',
+
         'change_amount' => 'decimal:2',
+
+        'created_at' => 'datetime',
+
+        'updated_at' => 'datetime',
+
     ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function details(): HasMany
@@ -53,10 +86,27 @@ class Sale extends Model
         return $this->hasMany(SaleDetail::class);
     }
 
-    public function creator(): BelongsTo
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    public function getTotalQtyAttribute(): float
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return (float) $this->details->sum('qty');
     }
+
+    public function getTotalProfitAttribute(): float
+    {
+        return (float) $this->details->sum('profit');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function isDraft(): bool
     {
@@ -76,5 +126,18 @@ class Sale extends Model
     public function isCancelled(): bool
     {
         return $this->status === 'Cancelled';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeLatestFirst($query)
+    {
+        return $query
+            ->orderByDesc('sale_date')
+            ->orderByDesc('id');
     }
 }
