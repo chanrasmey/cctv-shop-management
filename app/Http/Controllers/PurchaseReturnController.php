@@ -72,7 +72,7 @@ class PurchaseReturnController extends Controller
         try {
 
             $purchaseReturn = $this->purchaseReturnService
-                ->create(array_merge(
+                ->create($purchase, array_merge(
                     $request->validated(),
                     [
                         'purchase_id' => $purchase->id,

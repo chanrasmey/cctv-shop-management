@@ -11,18 +11,6 @@ use App\Models\Supplier;
 
 class StockCardReportService
 {
-    public function movements(array $filters = [])
-    {
-        return $this->query($filters)
-            ->paginate(50)
-            ->withQueryString();
-    }
-
-    public function movementsForPrint(array $filters = [])
-    {
-        return $this->query($filters)->get();
-    }
-
     public function summary(array $filters = []): array
     {
         $movements = $this->query($filters)->get();
@@ -57,7 +45,7 @@ class StockCardReportService
                 'product.brand',
                 'product.unit',
                 'product.supplier',
-                'createdBy',
+                'creator',
             ])
 
             ->when(
@@ -118,7 +106,7 @@ class StockCardReportService
                         ->when(
                 !empty($filters['date_from']),
                 fn ($query) => $query->whereDate(
-                    'movement_date',
+                    'created_at',
                     '>=',
                     $filters['date_from']
                 )
@@ -127,13 +115,13 @@ class StockCardReportService
             ->when(
                 !empty($filters['date_to']),
                 fn ($query) => $query->whereDate(
-                    'movement_date',
+                    'created_at',
                     '<=',
                     $filters['date_to']
                 )
             )
 
-            ->orderBy('movement_date')
+            ->orderBy('created_at')
             ->orderBy('id');
     }
 
@@ -144,12 +132,12 @@ class StockCardReportService
 
     public function categories()
     {
-        return Category::orderBy('category_name')->get();
+        return Category::orderBy('name')->get();
     }
 
     public function brands()
     {
-        return Brand::orderBy('brand_name')->get();
+        return Brand::orderBy('name')->get();
     }
 
     public function suppliers()
@@ -221,12 +209,12 @@ protected function openingBalance(array $filters = []): float
         ->where('product_id', $filters['product_id']);
 
     if (!empty($filters['date_from'])) {
-        $query->whereDate('movement_date', '<', $filters['date_from']);
+        $query->whereDate('created_at', '<', $filters['date_from']);
     }
 
     $opening = 0;
 
-    foreach ($query->orderBy('movement_date')->orderBy('id')->get() as $movement) {
+    foreach ($query->orderBy('created_at')->orderBy('id')->get() as $movement) {
 
         if ($movement->movement_type === 'IN') {
             $opening += $movement->quantity;

@@ -9,7 +9,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\PurchaseReportController;
 use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SupplierController;
@@ -84,6 +83,18 @@ Route::put(
     Route::get('/purchase-returns/{purchaseReturn}', [PurchaseReturnController::class, 'show'])
         ->name('purchase-returns.show');
 
+    Route::get('/purchase-returns', [PurchaseReturnController::class, 'index'])
+        ->name('purchase-returns.index');
+
+    Route::patch('/purchase-returns/{purchaseReturn}/cancel', [PurchaseReturnController::class, 'cancel'])
+        ->name('purchase-returns.cancel');
+
+    Route::get('/purchase-returns/{purchaseReturn}/print', [PurchaseReturnController::class, 'print'])
+        ->name('purchase-returns.print');
+
+    Route::get('/purchases/{purchase}/details', [PurchaseReturnController::class, 'purchaseDetails'])
+        ->name('purchases.details');
+
     Route::patch('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])
         ->name('purchases.cancel');
 
@@ -156,15 +167,6 @@ Route::prefix('reports')
         // Route::get('/stock-valuation', ...)->name('stock-valuation');
 
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reports
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/reports/purchases', [PurchaseReportController::class, 'index'])
-        ->name('reports.purchases');
 
     /*
     |--------------------------------------------------------------------------

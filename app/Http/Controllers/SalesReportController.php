@@ -2,207 +2,102 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreSalesReturnRequest;
-use App\Models\Sale;
-use App\Models\SalesReturn;
-use App\Services\Inventory\SalesReturnService;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-use Throwable;
+use App\Exports\SalesReportExport;
+use App\Services\Reports\PdfReportService;
+use App\Services\Reports\SalesReportService;
+use Illuminate\Http\Request;
 
 class SalesReportController extends Controller
 {
-    protected SalesReturnService $salesReturnService;
-
     public function __construct(
-        SalesReturnService $salesReturnService
+        protected SalesReportService $service,
+        protected PdfReportService $pdfService
     ) {
-        $this->salesReturnService = $salesReturnService;
     }
 
-    /**
-     * Display Sales Return list.
-     */
-    public function index(): View
+    public function index(Request $request)
     {
-        $salesReturns = SalesReturn::with([
-                'sale',
-                'customer',
-                'creator',
-            ])
-            ->latest()
-            ->paginate(15);
-
-        return view(
-            'sales_returns.index',
-            compact('salesReturns')
-        );
-    }
-
-    /**
-     * Show Create Sales Return page.
-     */
-    public function create(
-        Sale $sale
-    ): View {
-
-        $sale->load([
-            'customer',
-            'details.product',
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'customer_id',
+            'status',
         ]);
 
-        $returnNo = $this->salesReturnService
-            ->generateReturnNumber();
-
-        return view(
-            'sales_returns.create',
-            compact(
-                'sale',
-                'returnNo'
-            )
-        );
+        return view('reports.sales.index', [
+            'sales' => $this->service->sales($filters),
+            'summary' => $this->service->summary($filters),
+            'customers' => $this->service->customers(),
+            'statuses' => $this->service->statuses(),
+            'filters' => $filters,
+        ]);
     }
 
-    /**
-     * Store Sales Return.
-     */
-    public function store(
-        StoreSalesReturnRequest $request,
-        Sale $sale
-    ): RedirectResponse {
-
-        try {
-
-            $salesReturn = $this->salesReturnService->create(
-                $sale,
-                $request->validated()
-            );
-
-            return redirect()
-                ->route(
-                    'sales-returns.show',
-                    $salesReturn
-                )
-                ->with(
-                    'success',
-                    'Sales Return '
-                    . $salesReturn->return_no .
-                    ' created successfully.'
-                );
-
-        } catch (Throwable $e) {
-
-            report($e);
-
-            return back()
-                ->withInput()
-                ->with(
-                    'error',
-                    $e->getMessage()
-                );
-        }
-    }
-    /**
-     * Display Sales Return.
-     */
-    public function show(
-        SalesReturn $salesReturn
-    ): View {
-
-        $salesReturn->load([
-            'sale.customer',
-            'details.product',
-            'details.saleDetail',
-            'creator',
+    public function print(Request $request)
+    {
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'customer_id',
+            'status',
         ]);
 
-        return view(
-            'sales_returns.show',
-            compact('salesReturn')
-        );
+        return view('reports.sales.print', [
+            'sales' => $this->service->salesForPrint($filters),
+            'summary' => $this->service->summary($filters),
+            'customers' => $this->service->customers(),
+            'statuses' => $this->service->statuses(),
+            'filters' => $filters,
+            'company' => $this->service->company(),
+        ]);
     }
 
-    /**
-     * Print Sales Return.
-     */
-    public function print(
-        SalesReturn $salesReturn
-    ): View {
-
-        $salesReturn->load([
-            'sale.customer',
-            'details.product',
-            'details.saleDetail',
-            'creator',
+    public function excel(Request $request)
+    {
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'customer_id',
+            'status',
         ]);
 
-        return view(
-            'sales_returns.print',
-            compact('salesReturn')
+        $writer = (new SalesReportExport())->export(
+            $this->service->salesForPrint($filters),
+            $filters
+        );
+
+        return response()->streamDownload(
+            function () use ($writer): void {
+                $writer->save('php://output');
+            },
+            'Sales_Report_'.now()->format('Ymd_His').'.xlsx',
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]
         );
     }
 
-    /**
-     * Cancel Sales Return.
-     */
-    public function cancel(
-        SalesReturn $salesReturn
-    ): RedirectResponse {
+    public function pdf(Request $request)
+    {
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'customer_id',
+            'status',
+        ]);
 
-        try {
-
-            $salesReturn = $this->salesReturnService
-                ->cancel($salesReturn);
-
-            return redirect()
-                ->route(
-                    'sales-returns.show',
-                    $salesReturn
-                )
-                ->with(
-                    'success',
-                    'Sales Return '
-                    . $salesReturn->return_no .
-                    ' cancelled successfully.'
-                );
-
-        } catch (Throwable $e) {
-
-            report($e);
-
-            return back()->with(
-                'error',
-                $e->getMessage()
-            );
-        }
-    }
-    /**
-     * Delete Draft Sales Return.
-     */
-    public function destroy(
-        SalesReturn $salesReturn
-    ): RedirectResponse {
-
-        try {
-
-            $this->salesReturnService
-                ->deleteDraft($salesReturn);
-
-            return redirect()
-                ->route('sales-returns.index')
-                ->with(
-                    'success',
-                    'Sales Return deleted successfully.'
-                );
-
-        } catch (Throwable $e) {
-
-            report($e);
-
-            return back()->with(
-                'error',
-                $e->getMessage()
-            );
-        }
+        return $this->pdfService->download(
+            'reports.sales.pdf',
+            [
+                'sales' => $this->service->salesForPrint($filters),
+                'summary' => $this->service->summary($filters),
+                'customers' => $this->service->customers(),
+                'statuses' => $this->service->statuses(),
+                'filters' => $filters,
+                'company' => $this->service->company(),
+                'generated' => now(),
+            ],
+            'Sales_Report_'.now()->format('Ymd_His').'.pdf'
+        );
     }
 }

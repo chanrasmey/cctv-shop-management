@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\BalanceSheetReportExport;
-use App\Services\PdfReportService;
+use App\Services\Reports\PdfReportService;
 use App\Services\Reports\BalanceSheetReportService;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
 class BalanceSheetReportController extends Controller
 {
@@ -53,25 +52,23 @@ class BalanceSheetReportController extends Controller
 
         ];
 
-        return $this->pdfService->stream(
-
-            'reports.balance_sheet.pdf',
-
-            $data,
-
-            'Balance-Sheet-Report.pdf'
-
-        );
+        return $this->pdfService->stream('reports.balance_sheet.pdf', $data);
     }
 
     public function excel(Request $request)
     {
-        return Excel::download(
+        $writer = (new BalanceSheetReportExport())->export(
+            $this->service->report($request->all())
+        );
 
-            new BalanceSheetReportExport($request->all()),
-
-            'Balance-Sheet-Report.xlsx'
-
+        return response()->streamDownload(
+            function () use ($writer): void {
+                $writer->save('php://output');
+            },
+            'Balance-Sheet-Report.xlsx',
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]
         );
     }
-    }
+}

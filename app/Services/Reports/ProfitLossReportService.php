@@ -12,21 +12,12 @@ class ProfitLossReportService
     ) {
     }
 
-    public function report(array $filters = [])
-    {
-        return $this->financial->summary($filters);
-    }
-
-    public function company()
-    {
-        return CompanySetting::first();
-    }
-        /**
+    /**
      * Generate Profit & Loss report data.
      */
     public function report(array $filters = []): array
     {
-        return $this->financial->summary($filters);
+        return $this->financial->dashboard($filters);
     }
 
     /**
@@ -52,4 +43,4 @@ class ProfitLossReportService
     {
         return 'profit_loss_' . now()->format('Ymd_His');
     }
-    }
+}

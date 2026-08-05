@@ -81,12 +81,12 @@ class StockValuationReportService
     }
         public function categories()
     {
-        return Category::orderBy('category_name')->get();
+        return Category::orderBy('name')->get();
     }
 
     public function brands()
     {
-        return Brand::orderBy('brand_name')->get();
+        return Brand::orderBy('name')->get();
     }
 
     public function company()

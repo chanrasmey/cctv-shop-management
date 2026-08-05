@@ -55,16 +55,32 @@ class BalanceSheetReportService
             ],
         ];
 
+        $totalAssets = collect($assets)->sum('amount');
+        $totalLiabilities = collect($liabilities)->sum('amount');
+        $totalEquity = collect($equity)->sum('amount');
+        $liabilitiesAndEquity = $totalLiabilities + $totalEquity;
+
         return [
             'assets' => $assets,
             'liabilities' => $liabilities,
             'equity' => $equity,
 
-            'total_assets' => collect($assets)->sum('amount'),
+            'cash' => $cash,
+            'inventory' => $inventory,
+            'accounts_receivable' => $receivable,
+            'other_assets' => 0,
+            'total_assets' => $totalAssets,
 
-            'total_liabilities' => collect($liabilities)->sum('amount'),
+            'accounts_payable' => $payable,
+            'other_liabilities' => 0,
+            'total_liabilities' => $totalLiabilities,
 
-            'total_equity' => collect($equity)->sum('amount'),
+            'owner_capital' => 0,
+            'retained_earnings' => $retainedEarnings,
+            'current_profit' => 0,
+            'total_equity' => $totalEquity,
+            'liabilities_and_equity' => $liabilitiesAndEquity,
+            'balanced' => round($totalAssets, 2) === round($liabilitiesAndEquity, 2),
 
             'company' => $this->company(),
         ];

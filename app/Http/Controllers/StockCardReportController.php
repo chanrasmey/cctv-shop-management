@@ -92,15 +92,27 @@ class StockCardReportController extends Controller
 
     public function excel(Request $request)
     {
-        return (new StockCardReportExport(
-            $request->only([
-                'product_id',
-                'category_id',
-                'brand_id',
-                'supplier_id',
-                'date_from',
-                'date_to',
-            ])
-        ))->download();
+        $filters = $request->only([
+            'product_id',
+            'category_id',
+            'brand_id',
+            'supplier_id',
+            'date_from',
+            'date_to',
+        ]);
+
+        $writer = (new StockCardReportExport())->export(
+            $this->reportService->movementsForPrint($filters)
+        );
+
+        return response()->streamDownload(
+            function () use ($writer): void {
+                $writer->save('php://output');
+            },
+            'stock-card-report.xlsx',
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]
+        );
     }
 }

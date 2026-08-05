@@ -3,113 +3,55 @@
 namespace App\Exports;
 
 use App\Services\Reports\StockValuationReportService;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Enumerable;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-class StockValuationReportExport implements
-    FromCollection,
-    WithHeadings,
-    ShouldAutoSize,
-    WithStyles
+class StockValuationReportExport
 {
-    protected array $filters;
-
-    protected StockValuationReportService $service;
-
-    public function __construct(array $filters = [])
+    public function export(Enumerable $items): Xlsx
     {
-        $this->filters = $filters;
-        $this->service = app(StockValuationReportService::class);
-    }
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-    public function collection()
-    {
-        return $this->service
-            ->itemsForPrint($this->filters)
-            ->map(function ($item) {
-
-                $costValue = $item->stock * $item->average_cost;
-
-                $sellingValue = $item->stock * $item->sell_price;
-
-                $grossProfit = $sellingValue - $costValue;
-
-                return [
-
-                    'sku' => $item->sku,
-
-                    'product' => $item->product_name,
-
-                    'category' => $item->category->category_name ?? '',
-
-                    'brand' => $item->brand->brand_name ?? '',
-
-                    'stock' => $item->stock,
-
-                    'average_cost' => $item->average_cost,
-                                        'cost_value' => $costValue,
-
-                    'selling_price' => $item->sell_price,
-
-                    'selling_value' => $sellingValue,
-
-                    'gross_profit' => $grossProfit,
-
-                    'status' => $this->service->stockStatus($item),
-
-                ];
-
-            });
-    }
-
-    public function headings(): array
-    {
-        return [
-
-            'SKU',
-
-            'Product',
-
-            'Category',
-
-            'Brand',
-
-            'Stock Qty',
-
-            'Average Cost',
-
-            'Cost Value',
-
-            'Selling Price',
-
-            'Selling Value',
-
-            'Gross Profit',
-
-            'Stock Status',
-
+        $headers = [
+            'SKU', 'Product', 'Category', 'Brand', 'Stock Qty', 'Average Cost',
+            'Cost Value', 'Selling Price', 'Selling Value', 'Gross Profit', 'Stock Status',
         ];
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
+
+        $row = 2;
+
+        foreach ($items as $item) {
+            $costValue = (float) $item->stock * (float) $item->average_cost;
+            $sellingValue = (float) $item->stock * (float) $item->sell_price;
+
+            $sheet->fromArray([
+                $item->sku,
+                $item->product_name,
+                $item->category?->name ?? '',
+                $item->brand?->name ?? '',
+                $item->stock,
+                $item->average_cost,
+                $costValue,
+                $item->sell_price,
+                $sellingValue,
+                $sellingValue - $costValue,
+                app(StockValuationReportService::class)->stockStatus($item),
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        $sheet->getStyle("E2:J{$row}")
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
+        foreach (range('A', 'K') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return new Xlsx($spreadsheet);
     }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-
-            1 => [
-
-                'font' => [
-                    'bold' => true,
-                ],
-
-                'alignment' => [
-                    'horizontal' => 'center',
-                ],
-
-            ],
-
-        ];
-    }
-    }
+}

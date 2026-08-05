@@ -6,7 +6,6 @@ use App\Exports\ProfitLossReportExport;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ProfitLossReportService;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProfitLossReportController extends Controller
 {
@@ -48,22 +47,27 @@ class ProfitLossReportController extends Controller
     {
         $filters = $request->all();
 
-        return $this->pdfService->stream(
-            'reports.profit_loss.pdf',
-            [
-                'report' => $this->service->report($filters),
-                'company' => $this->service->company(),
-                'filters' => $filters,
-            ],
-            'profit-loss-report.pdf'
-        );
+        return $this->pdfService->stream('reports.profit_loss.pdf', [
+            'report' => $this->service->report($filters),
+            'company' => $this->service->company(),
+            'filters' => $filters,
+        ]);
     }
 
     public function excel(Request $request)
     {
-        return Excel::download(
-            new ProfitLossReportExport($request->all()),
-            'profit-loss-report.xlsx'
+        $writer = (new ProfitLossReportExport())->export(
+            $this->service->report($request->all())
+        );
+
+        return response()->streamDownload(
+            function () use ($writer): void {
+                $writer->save('php://output');
+            },
+            'profit-loss-report.xlsx',
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]
         );
     }
 }

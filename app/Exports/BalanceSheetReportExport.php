@@ -2,137 +2,55 @@
 
 namespace App\Exports;
 
-use App\Services\Reports\BalanceSheetReportService;
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-class BalanceSheetReportExport implements FromArray, WithHeadings, ShouldAutoSize
+class BalanceSheetReportExport
 {
-    protected array $filters;
-
-    protected BalanceSheetReportService $service;
-
-    public function __construct(array $filters = [])
+    public function export(array $report): Xlsx
     {
-        $this->filters = $filters;
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $this->service = app(BalanceSheetReportService::class);
+        $sheet->setCellValue('A1', 'Balance Sheet Report');
+        $sheet->mergeCells('A1:C1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $row = 3;
+
+        foreach ([
+            'Assets' => $report['assets'] ?? [],
+            'Liabilities' => $report['liabilities'] ?? [],
+            'Equity' => $report['equity'] ?? [],
+        ] as $section => $items) {
+            $sheet->setCellValue("A{$row}", $section);
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+            $row++;
+
+            foreach ($items as $item) {
+                $sheet->setCellValue("B{$row}", $item['name'] ?? '');
+                $sheet->setCellValue("C{$row}", $item['amount'] ?? 0);
+                $row++;
+            }
+        }
+
+        $sheet->setCellValue("B{$row}", 'Total Assets');
+        $sheet->setCellValue("C{$row}", $report['total_assets'] ?? 0);
+        $row++;
+        $sheet->setCellValue("B{$row}", 'Total Liabilities');
+        $sheet->setCellValue("C{$row}", $report['total_liabilities'] ?? 0);
+        $row++;
+        $sheet->setCellValue("B{$row}", 'Total Equity');
+        $sheet->setCellValue("C{$row}", $report['total_equity'] ?? 0);
+
+        $sheet->getStyle("C1:C{$row}")
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
+        foreach (range('A', 'C') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return new Xlsx($spreadsheet);
     }
-
-    public function headings(): array
-    {
-        return [
-            ['Balance Sheet Report'],
-            [''],
-            [
-                'Description',
-                'Amount',
-            ],
-        ];
-    }
-
-    public function array(): array
-    {
-        $report = $this->service->report($this->filters);
-
-        return [
-
-            [
-                'ASSETS',
-                '',
-            ],
-
-            [
-                'Cash',
-                $report['cash'],
-            ],
-
-            [
-                'Inventory',
-                $report['inventory'],
-            ],
-
-            [
-                'Accounts Receivable',
-                $report['accounts_receivable'],
-            ],
-
-            [
-                'Other Assets',
-                $report['other_assets'],
-            ],
-
-            [
-                'Total Assets',
-                $report['total_assets'],
-            ],
-                        [
-                'LIABILITIES',
-                '',
-            ],
-
-            [
-                'Accounts Payable',
-                $report['accounts_payable'],
-            ],
-
-            [
-                'Other Liabilities',
-                $report['other_liabilities'],
-            ],
-
-            [
-                'Total Liabilities',
-                $report['total_liabilities'],
-            ],
-
-            [
-                '',
-                '',
-            ],
-
-            [
-                "OWNER'S EQUITY",
-                '',
-            ],
-
-            [
-                'Owner Capital',
-                $report['owner_capital'],
-            ],
-
-            [
-                'Retained Earnings',
-                $report['retained_earnings'],
-            ],
-
-            [
-                'Current Profit',
-                $report['current_profit'],
-            ],
-
-            [
-                'Total Equity',
-                $report['total_equity'],
-            ],
-
-            [
-                '',
-                '',
-            ],
-
-            [
-                'Liabilities + Equity',
-                $report['liabilities_and_equity'],
-            ],
-
-            [
-                'Balance Status',
-                $report['balanced']
-                    ? 'BALANCED'
-                    : 'NOT BALANCED',
-            ],
-        ];
-    }
-    }
+}

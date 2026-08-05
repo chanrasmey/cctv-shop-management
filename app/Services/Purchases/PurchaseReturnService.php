@@ -7,6 +7,8 @@ use App\Models\Purchase;
 use App\Models\PurchaseDetail;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnDetail;
+use App\Services\Inventory\CostService;
+use App\Services\Inventory\StockService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -127,7 +129,7 @@ class PurchaseReturnService
     /**
      * Generate Purchase Return Number.
      */
-    protected function generateReturnNumber(): string
+    public function generateReturnNumber(): string
     {
         $today = now()->format('Ymd');
 
@@ -394,11 +396,13 @@ if ($currentStock < $qty) {
                  * Restore stock.
                  */
                 $this->stockService->stockIn(
-                    $detail->product,
-                    (float) $detail->qty,
-                    'Purchase Return Cancel',
-                    $purchaseReturn->return_no,
-                    $purchaseReturn->id
+                    product: $detail->product,
+                    quantity: (float) $detail->qty,
+                    referenceNo: $purchaseReturn->return_no,
+                    referenceId: $purchaseReturn->id,
+                    unitCost: (float) $detail->unit_cost,
+                    movementType: 'Purchase Return',
+                    remark: 'Purchase Return Cancelled'
                 );
 
                 /**

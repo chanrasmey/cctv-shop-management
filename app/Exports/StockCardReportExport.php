@@ -2,104 +2,50 @@
 
 namespace App\Exports;
 
-use App\Services\Reports\StockCardReportService;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Enumerable;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-class StockCardReportExport implements
-    FromCollection,
-    WithHeadings,
-    ShouldAutoSize,
-    WithStyles
+class StockCardReportExport
 {
-    protected array $filters;
-
-    protected StockCardReportService $service;
-
-    public function __construct(array $filters = [])
+    public function export(Enumerable $movements): Xlsx
     {
-        $this->filters = $filters;
-        $this->service = app(StockCardReportService::class);
-    }
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-    public function collection()
-    {
-        return $this->service
-            ->movementsForPrint($this->filters)
-            ->map(function ($movement) {
-
-                $inQty = $movement->movement_type === 'IN'
-                    ? $movement->quantity
-                    : 0;
-
-                $outQty = $movement->movement_type === 'OUT'
-                    ? $movement->quantity
-                    : 0;
-
-                return [
-
-                    'date' => optional($movement->movement_date)
-                        ->format('Y-m-d'),
-
-                    'product' => $movement->product->product_name ?? '',
-
-                    'reference' => $movement->reference_no,
-
-                    'type' => $movement->movement_type,
-
-                    'stock_in' => $inQty,
-
-                    'stock_out' => $outQty,
-                                        'balance' => $movement->running_balance,
-
-                    'remark' => $movement->remark,
-
-                    'user' => $movement->createdBy->name ?? '',
-
-                ];
-            });
-    }
-
-    public function headings(): array
-    {
-        return [
-
-            'Date',
-
-            'Product',
-
-            'Reference',
-
-            'Movement Type',
-
-            'Stock In',
-
-            'Stock Out',
-
-            'Running Balance',
-
-            'Remark',
-
-            'Created By',
-
+        $headers = [
+            'Date', 'Reference', 'Product', 'Movement Type',
+            'Stock In', 'Stock Out', 'Balance', 'Unit Cost', 'Remark',
         ];
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
+
+        $row = 2;
+
+        foreach ($movements as $movement) {
+            $sheet->fromArray([
+                $movement->created_at?->format('Y-m-d'),
+                $movement->reference_no,
+                $movement->product?->product_name,
+                $movement->movement_type,
+                $movement->qty_in,
+                $movement->qty_out,
+                $movement->balance,
+                $movement->unit_cost,
+                $movement->remark,
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        $sheet->getStyle("E2:H{$row}")
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
+        foreach (range('A', 'I') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        return new Xlsx($spreadsheet);
     }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-
-            1 => [
-
-                'font' => [
-                    'bold' => true,
-                ],
-
-            ],
-
-        ];
-    }
-    }
+}

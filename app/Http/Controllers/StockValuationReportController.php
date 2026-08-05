@@ -6,7 +6,6 @@ use App\Exports\StockValuationReportExport;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\StockValuationReportService;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
 class StockValuationReportController extends Controller
 {
@@ -54,25 +53,30 @@ class StockValuationReportController extends Controller
     {
         $filters = $request->all();
 
-        return $this->pdfService->stream(
-            'reports.stock_valuation.pdf',
-            [
-                'items'      => $this->service->itemsForPrint($filters),
-                'summary'    => $this->service->summary($filters),
-                'categories' => $this->service->categories(),
-                'brands'     => $this->service->brands(),
-                'company'    => $this->service->company(),
-                'filters'    => $filters,
-            ],
-            'stock-valuation-report.pdf'
-        );
+        return $this->pdfService->stream('reports.stock_valuation.pdf', [
+            'items'      => $this->service->itemsForPrint($filters),
+            'summary'    => $this->service->summary($filters),
+            'categories' => $this->service->categories(),
+            'brands'     => $this->service->brands(),
+            'company'    => $this->service->company(),
+            'filters'    => $filters,
+        ]);
     }
 
     public function excel(Request $request)
     {
-        return Excel::download(
-            new StockValuationReportExport($request->all()),
-            'stock-valuation-report.xlsx'
+        $writer = (new StockValuationReportExport())->export(
+            $this->service->itemsForPrint($request->all())
+        );
+
+        return response()->streamDownload(
+            function () use ($writer): void {
+                $writer->save('php://output');
+            },
+            'stock-valuation-report.xlsx',
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]
         );
     }
 }

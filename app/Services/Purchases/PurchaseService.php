@@ -6,6 +6,8 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseDetail;
 use App\Models\StockMovement;
+use App\Services\Inventory\CostService;
+use App\Services\Inventory\StockService;
 use App\Services\Shared\NumberGeneratorService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
